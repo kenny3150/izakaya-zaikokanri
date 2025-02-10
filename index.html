@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>居酒屋棚卸アプリ</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f9;
+    }
+    header {
+      background-color: #333;
+      color: #fff;
+      padding: 10px;
+      text-align: center;
+    }
+    nav {
+      display: flex;
+      justify-content: space-around;
+      background-color: #444;
+      padding: 10px;
+    }
+    nav button {
+      background-color: #555;
+      color: white;
+      border: none;
+      padding: 10px;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    nav button:hover {
+      background-color: #777;
+    }
+    .container {
+      padding: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    .controls {
+      display: flex;
+      gap: 5px;
+    }
+    .controls button {
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+    .add-item-form {
+      margin-top: 20px;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>居酒屋棚卸アプリ</h1>
+  </header>
+  <nav id="category-nav">
+    <button onclick="switchCategory('food')">フード</button>
+    <button onclick="switchCategory('drink')">ドリンク</button>
+  </nav>
+  <div class="container">
+    <div id="food" class="category-page hidden">
+      <h2>フード</h2>
+      <div id="food-subcategories"></div>
+    </div>
+    <div id="drink" class="category-page hidden">
+      <h2>ドリンク</h2>
+      <div id="drink-subcategories"></div>
+    </div>
+  </div>
+
+  <script>
+    const categories = {
+      food: ["海鮮", "海鮮炭焼き", "前菜", "揚げ物", "創作料理", "肉", "デザート"],
+      drink: ["梅酒", "果実酒", "芋焼酎", "その他焼酎", "カクテル", "ノンアルコールカクテル", "ソフトドリンク", "ワイン", "日本酒", "原液類"]
+    };
+
+    let inventory = {
+      food: {
+        海鮮: ["うに", "ホタテ", "かつお", "サワラ", "キンキ", "サーモン", "ゴンナガマグロ", "平目", "真鯛", "秋刀魚", "鰹", "いくら", "あん肝", "うなきも"].map(name => ({ name, stock: 0 })),
+        海鮮炭焼き: ["殻付きホタテバター", "さざえの壺焼き", "ホッケの二夜干し", "ふぐの二夜干し", "イカの二夜干し半身", "さわらの西京焼き", "ぶりのカマ塩焼き", "たいのお頭焼き", "あんこう唐揚", "鮮魚の酒盗チーズ"].map(name => ({ name, stock: 0 })),
+        前菜: ["牛トロと京豆冨の前菜", "阿波尾鶏とトマトのサラダ", "海鮮とアボカドのカルパッチョ", "三元豚生ハムとザクザクチーズのシーザーサラダ", "柿とクリームチーズの前菜", "花咲バターしめじのしょうゆ焼き", "どんこ椎茸炭火焼き", "茄子の形みそ田楽", "じゃがバター", "玉葱の石釜ステーキ", "冷奴", "みぞれの揚げ出汁"].map(name => ({ name, stock: 0 })),
+        揚げ物: ["火熱の若鶏手揚げ", "自家製多タルのチキン南蛮", "3L牡蠣カキフライ", "サキイカ天ぷら", "京豆冨の厚揚げ", "長芋の皮付き唐揚げ", "チュリップ甘辛揚げ", "超細切りポテトフライ", "海老3L", "キス2L", "生ダコ", "いわし一枚", "赤ナス", "たもぎだけ", "安納芋", "どんこ椎茸", "旬の天ぷら盛り合わせ"].map(name => ({ name, stock: 0 })),
+        創作料理: ["セセリの生柚子こしょう焼き", "出汁巻き玉子 香味つゆ", "カマンベールチーズフライ柚子ジュレ", "大海老の天使のヒラフライ", "くまちゃん煮玉子ポテトサラダ", "明太木ノ子アヒージョパン付き", "安納芋チップス", "生カボスサワー", "豚焼きしゃぶの京水菜"].map(name => ({ name, stock: 0 })),
+        肉: ["牛トロのユッケ", "イチボステーキ", "イチボのタタキ", "ガツシリ京ポンズ", "ガツシリわさび和え", "炭火黒焼き", "モモのタタキ", "生つくね", "豚舌の葱塩炭焼き", "合鴨ロースステーキ", "鮫ワニの舌ステーキ"].map(name => ({ name, stock: 0 })),
+        デザート: ["バニラアイス", "季節のシャーベット", "イタリアンマスカルポーネチーズのティラミスアイス", "イタリアンマスカルポーネチーズの抹茶黒蜜きなこアイス", "選べる梅酒&パニラアイス", "マンゴー", "ぶどう", "パイナップル", "ゆず", "キウイ"].map(name => ({ name, stock: 0 }))
+      },
+      drink: {
+        梅酒: ["梅酒", "雑賀梅酒", "绿茶梅酒", "上等梅酒", "完熟梅酒", "鳳凰美田梅酒", "大信州梅酒", "花札梅酒", "赤ワイン梅酒", "みぞれりんご梅酒", "はっさく梅酒", "マンゴー梅酒", "ブラッドオレンジ梅酒", "バナナ梅酒"].map(name => ({ name, stock: 0 })),
+        果実酒: ["もも", "みかん", "レモン", "ゆず", "レッドグレープフルーツ", "ナイアガラ白ぶどう", "山ぶどう", "ゆずレモン", "すもも", "ラフランス", "いちご", "ポンカン"].map(name => ({ name, stock: 0 })),
+        芋焼酎: ["蔵の師魂(のみほ)", "蔵の師魂いもいも", "蔵の師魂ピンク", "蔵の師魂グリーン", "蔵の師魂オレンジ", "蔵の師魂赤芋いも", "富乃宝山", "八幡", "千亀女", "桜明日香", "三岳", "黒七夕", "尧六", "くじら", "赤山猪", "河童", "明るい農村", "ひめあやか", "京屋かんろ", "岳宝", "竈猫"].map(name => ({ name, stock: 0 })),
+        その他焼酎: ["河童", "泰明", "七田", "蔵の師魂", "ダバダ火振", "七田", "山の香", "龍宮"].map(name => ({ name, stock: 0 })),
+        カクテル: ["カシス", "ピーチ", "ジン", "ウォッカ", "トニックW"].map(name => ({ name, stock: 0 })),
+        ノンアルコールカクテル: ["カクテルN", "ピーチN"].map(name => ({ name, stock: 0 })),
+        ソフトドリンク: ["コーラ", "オレンジ", "マンゴー", "パイナップル", "アップル", "ジンジャーエール", "のせジンジャーエール"].map(name => ({ name, stock: 0 })),
+        ワイン: ["赤 (飲みホ)", "白（飲みホ)", "赤", "白"].map(name => ({ name, stock: 0 })),
+        日本酒: ["片野桜（飲みほ）"].map(name => ({ name, stock: 0 })),
+        原液類: ["レモン", "ゆず", "ゆず蜜", "カルピス", "ライム"].map(name => ({ name, stock: 0 }))
+      }
+    };
+
+    function switchCategory(category) {
+      document.querySelectorAll('.category-page').forEach(page => page.classList.add('hidden'));
+      document.getElementById(category).classList.remove('hidden');
+      if (!document.getElementById(`${category}-subcategories`).innerHTML.trim()) {
+        renderSubcategories(category);
+      }
+    }
+
+    function renderSubcategories(category) {
+      const container = document.getElementById(`${category}-subcategories`);
+      categories[category].forEach(sub => {
+        const div = document.createElement('div');
+        div.innerHTML = `
+          <h3>${sub}</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>商品名</th>
+                <th>在庫数</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="${category}-${sub}-items"></tbody>
+          </table>
+          <div class="add-item-form">
+            <input type="text" id="${category}-${sub}-new-item" placeholder="新しい商品名">
+            <button onclick="addItem('${category}', '${sub}')">追加</button>
+          </div>
+        `;
+        container.appendChild(div);
+        renderItems(category, sub);
+      });
+    }
+
+    function renderItems(category, sub) {
+      const tbody = document.getElementById(`${category}-${sub}-items`);
+      tbody.innerHTML = '';
+      inventory[category][sub].forEach((item, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td><input type="text" value="${item.name}" onchange="updateItemName('${category}', '${sub}', ${index}, this.value)"></td>
+          <td><input type="number" value="${item.stock}" onchange="updateStock('${category}', '${sub}', ${index}, this.value)"></td>
+          <td class="controls">
+            <button onclick="adjustStock('${category}', '${sub}', ${index}, 1)">+</button>
+            <button onclick="adjustStock('${category}', '${sub}', ${index}, -1)">-</button>
+            <button onclick="removeItem('${category}', '${sub}', ${index})">削除</button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function addItem(category, sub) {
+      const input = document.getElementById(`${category}-${sub}-new-item`);
+      const name = input.value.trim();
+      if (name) {
+        inventory[category][sub].push({ name, stock: 0 });
+        renderItems(category, sub);
+        input.value = '';
+      }
+    }
+
+    function updateItemName(category, sub, index, newName) {
+      inventory[category][sub][index].name = newName;
+    }
+
+    function updateStock(category, sub, index, newStock) {
+      inventory[category][sub][index].stock = parseInt(newStock, 10);
+    }
+
+    function adjustStock(category, sub, index, amount) {
+      inventory[category][sub][index].stock += amount;
+      renderItems(category, sub);
+    }
+
+    function removeItem(category, sub, index) {
+      inventory[category][sub].splice(index, 1);
+      renderItems(category, sub);
+    }
+
+    // Initialize
+    switchCategory('food');
+  </script>
+</body>
+</html>
